@@ -262,6 +262,7 @@ version = "0.1.0"
 dependencies = [
  "chess 3.1.1",
  "ggez",
+ "nalgebra",
 ]
 
 [[package]]
