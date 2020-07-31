@@ -9,7 +9,7 @@ use ggez::{Context, GameResult};
 use ggez::event::{self, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, DrawMode, Color, MeshBuilder, DrawParam};
 
-use chess::{Board, MoveGen, Square, ChessMove};
+use chess::{Board, MoveGen, Square, ChessMove, BoardStatus};
 
 use nalgebra as na;
 type Point2 = na::Point2<f32>;
@@ -96,11 +96,11 @@ impl MainState {
 		let remember = Remember::initialize();
 		let board = Board::default();
 		let movegen = MoveGen::new_legal(&board);
-		let m = ChessMove::new(Square::D2,
-			Square::D4,
-			None);
-		let mut result = Board::default();
-		board.make_move(m, &mut result);
+		// let m = ChessMove::new(Square::D2,
+		// 	Square::D4,
+		// 	None);
+		// let mut result = Board::default();
+		// board.make_move(m, &mut result);
 		assert_eq!(movegen.len(), 20);
 
         Ok (MainState {
@@ -108,7 +108,7 @@ impl MainState {
             pos_y: 100.0,
 			mouse_down: false,
 			assets: assets,
-			board: result,
+			board: board,
 			remember: remember,
 		})
 	}
@@ -440,7 +440,7 @@ impl MainState {
 impl ggez::event::EventHandler for MainState {
 	//Called upon each logic update to the game. This should be where the game's logic takes place.
 	fn update(&mut self, ctx: &mut Context) -> GameResult {
-		
+		assert_eq!(self.board.status(), BoardStatus::Ongoing);
 		Ok(())
 	}
 	//Called to do the drawing of your game.
@@ -473,6 +473,17 @@ impl ggez::event::EventHandler for MainState {
 			self.remember.released_square = self.remember.curr_pressed_square;
 		} else {	//User released inside the window
 			self.remember.released_square = self.coordinate_to_square(ctx, (x, y));
+			
+			if self.remember.released_square != self.remember.curr_pressed_square{
+				let m = ChessMove::new(self.remember.curr_pressed_square,
+					self.remember.released_square,
+					None);
+				if self.board.legal(m) {
+					let mut result = Board::default();
+					self.board.make_move(m, &mut result);
+					self.board = result;
+				}
+			}
 		}
 		println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
 	}
