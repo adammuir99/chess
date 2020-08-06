@@ -3,17 +3,20 @@ use nalgebra;
 use std::env;
 use std::path;
 
-use ggez::input;
 use ggez::conf;
 use ggez::{Context, GameResult};
-use ggez::event::{self, KeyCode, KeyMods, MouseButton};
-use ggez::graphics::{self, DrawMode, Color, MeshBuilder, DrawParam};
+use ggez::event::{self, MouseButton};
+use ggez::graphics::{self, Color, MeshBuilder, DrawParam};
 
-use chess::{Board, MoveGen, Square, ChessMove, BoardStatus};
+use chess::{Board, MoveGen, Square, ChessMove, BoardStatus, EMPTY};
+
+//Import engine.rs
+mod engine;
 
 use nalgebra as na;
 type Point2 = na::Point2<f32>;
 
+//Sprites for each piece
 struct Assets {
 	black_pawn: graphics::Image,
 	black_rook: graphics::Image,
@@ -96,11 +99,6 @@ impl MainState {
 		let remember = Remember::initialize();
 		let board = Board::default();
 		let movegen = MoveGen::new_legal(&board);
-		// let m = ChessMove::new(Square::D2,
-		// 	Square::D4,
-		// 	None);
-		// let mut result = Board::default();
-		// board.make_move(m, &mut result);
 		assert_eq!(movegen.len(), 20);
 
         Ok (MainState {
@@ -142,18 +140,20 @@ impl MainState {
 		let (tile_width, tile_height) = self.tile_size(ctx);
 		let mut mb = MeshBuilder::new();
 
+		//Highlight pressed square
 		let (mut x, mut y) = self.square_to_coordinate(ctx, self.remember.curr_pressed_square);
 		x = x - (tile_width - 93.0) / 2.0;
 		y = y - (tile_height - 93.0) / 2.0;
 
-		let color = Color::from_rgb(245, 247, 109);	//Highlight
+		let mut color = Color::from_rgb(245, 247, 109);	//Highlight color
 
 		mb.rectangle(
 			graphics::DrawMode::fill(),
 			graphics::Rect::new(x, y, tile_width, tile_height),
 			color
 		);
-
+		
+		//Highlight released square
 		let (mut x2, mut y2) = self.square_to_coordinate(ctx, self.remember.released_square);
 		x2 = x2 - (tile_width - 93.0) / 2.0;
 		y2 = y2 - (tile_height - 93.0) / 2.0;
@@ -163,6 +163,32 @@ impl MainState {
 			graphics::Rect::new(x2, y2, tile_width, tile_height),
 			color
 		);
+		
+		//Highlight previous move
+		let (mut x3, mut y3) = self.square_to_coordinate(ctx, self.remember.last_pressed_square);
+		x3 = x3 - (tile_width - 93.0) / 2.0;
+		y3 = y3 - (tile_height - 93.0) / 2.0;
+
+		mb.rectangle(
+			graphics::DrawMode::fill(),
+			graphics::Rect::new(x3, y3, tile_width, tile_height),
+			color
+		);
+
+		//Highlight checked piece
+		if *self.board.checkers() != EMPTY{	//if the bitboard of pieces putting me in check is NOT empty
+			let (mut x4, mut y4) = self.square_to_coordinate(ctx, self.board.king_square(self.board.side_to_move()));	//Get the square of the moving player's king
+			x4 = x4 - (tile_width - 93.0) / 2.0;
+			y4 = y4 - (tile_height - 93.0) / 2.0;
+
+			color = Color::from_rgb(255, 50, 50);	//Color red
+
+			mb.rectangle(
+				graphics::DrawMode::fill(),
+				graphics::Rect::new(x4, y4, tile_width, tile_height),
+				color
+			);
+		}
 
 		let mut mesh = mb.build(ctx)?;
 		graphics::draw(ctx, &mut mesh, DrawParam::default())
@@ -439,7 +465,7 @@ impl MainState {
 
 impl ggez::event::EventHandler for MainState {
 	//Called upon each logic update to the game. This should be where the game's logic takes place.
-	fn update(&mut self, ctx: &mut Context) -> GameResult {
+	fn update(&mut self, _ctx: &mut Context) -> GameResult {
 		assert_eq!(self.board.status(), BoardStatus::Ongoing);
 		Ok(())
 	}
@@ -447,7 +473,9 @@ impl ggez::event::EventHandler for MainState {
 	fn draw(&mut self, ctx: &mut Context) -> GameResult {
 		//graphics::clear(ctx, [0.36, 0.20, 0.09, 1.0].into());
 		self.draw_board(ctx)?;
-		self.draw_highlights(ctx)?;
+		if self.remember.display_last_move{
+			self.draw_highlights(ctx)?;
+		}
 		self.draw_pieces(ctx, &self.board)?;
         graphics::present(ctx)?;
 		Ok(())
@@ -478,10 +506,14 @@ impl ggez::event::EventHandler for MainState {
 				let m = ChessMove::new(self.remember.curr_pressed_square,
 					self.remember.released_square,
 					None);
+				//If the suggested move is legal, make the move and update the board
 				if self.board.legal(m) {
+					self.remember.display_last_move = true;
 					let mut result = Board::default();
 					self.board.make_move(m, &mut result);
 					self.board = result;
+					//Remember the move that was made
+					self.remember.last_pressed_square = self.remember.released_square;
 				}
 			}
 		}
@@ -502,7 +534,7 @@ fn main() -> GameResult{
 	println!("Adding path {:?}", sprite_dir);
 
 	let cb = ggez::ContextBuilder::new("Chess", "Adam Muir")
-	.window_setup(conf::WindowSetup::default().title("Adam's chess engine!"))
+	.window_setup(conf::WindowSetup::default().title("Adam's shitty chess engine!"))
 	.window_mode(conf::WindowMode::default().dimensions(800.0, 800.0))
 	.add_resource_path(sprite_dir);
 	
