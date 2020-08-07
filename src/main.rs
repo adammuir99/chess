@@ -503,9 +503,17 @@ impl ggez::event::EventHandler for MainState {
 			self.remember.released_square = self.coordinate_to_square(ctx, (x, y));
 			
 			if self.remember.released_square != self.remember.curr_pressed_square{
+				//Determine whether the piece needs to be promoted
+				let promotion = if self.board.piece_on(self.remember.curr_pressed_square) == Some(chess::Piece::Pawn)
+								&& (self.remember.released_square.get_rank() == chess::Rank::First
+								|| self.remember.released_square.get_rank() == chess::Rank::Eighth) {
+					Some(chess::Piece::Queen)
+				} else {
+					None
+				};
 				let m = ChessMove::new(self.remember.curr_pressed_square,
 					self.remember.released_square,
-					None);
+					promotion);
 				//If the suggested move is legal, make the move and update the board
 				if self.board.legal(m) {
 					self.remember.display_last_move = true;
@@ -534,7 +542,7 @@ fn main() -> GameResult{
 	println!("Adding path {:?}", sprite_dir);
 
 	let cb = ggez::ContextBuilder::new("Chess", "Adam Muir")
-	.window_setup(conf::WindowSetup::default().title("Adam's shitty chess engine!"))
+	.window_setup(conf::WindowSetup::default().title("Adam's chess engine!"))
 	.window_mode(conf::WindowMode::default().dimensions(800.0, 800.0))
 	.add_resource_path(sprite_dir);
 	
