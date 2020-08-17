@@ -98,8 +98,6 @@ impl MainState {
 		let assets = Assets::new(ctx)?;
 		let remember = Remember::initialize();
 		let board = Board::default();
-		let movegen = MoveGen::new_legal(&board);
-		assert_eq!(movegen.len(), 20);
 
         Ok (MainState {
             pos_x: 100.0,
@@ -111,6 +109,7 @@ impl MainState {
 		})
 	}
 
+	//Draw the 8x8 board
 	fn draw_board(&self, ctx: &mut Context) -> GameResult<()>{
 		let (tile_width, tile_height) = self.tile_size(ctx);
 		let mut mb = MeshBuilder::new();
@@ -467,6 +466,9 @@ impl ggez::event::EventHandler for MainState {
 	//Called upon each logic update to the game. This should be where the game's logic takes place.
 	fn update(&mut self, _ctx: &mut Context) -> GameResult {
 		assert_eq!(self.board.status(), BoardStatus::Ongoing);
+		if self.board.side_to_move() == chess::Color::Black {
+			engine::ai_move(&mut self.board);
+		}
 		Ok(())
 	}
 	//Called to do the drawing of your game.
