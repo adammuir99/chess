@@ -8,7 +8,7 @@ use ggez::{Context, GameResult};
 use ggez::event::{self, MouseButton};
 use ggez::graphics::{self, Color, MeshBuilder, DrawParam};
 
-use chess::{Board, MoveGen, Square, ChessMove, BoardStatus, EMPTY};
+use chess::{Board, Square, ChessMove, BoardStatus, EMPTY};
 
 //Import engine.rs
 mod engine;
@@ -465,7 +465,7 @@ impl MainState {
 impl ggez::event::EventHandler for MainState {
 	//Called upon each logic update to the game. This should be where the game's logic takes place.
 	fn update(&mut self, _ctx: &mut Context) -> GameResult {
-		assert_eq!(self.board.status(), BoardStatus::Ongoing);
+		//assert_eq!(self.board.status(), BoardStatus::Ongoing);
 		if self.board.side_to_move() == chess::Color::Black {
 			engine::ai_move(&mut self.board);
 		}
