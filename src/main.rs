@@ -12,6 +12,7 @@ use chess::{Board, Square, ChessMove, BoardStatus, EMPTY};
 
 //Import engine.rs
 mod engine;
+mod tests;
 
 use nalgebra as na;
 type Point2 = na::Point2<f32>;
@@ -493,7 +494,6 @@ impl ggez::event::EventHandler for MainState {
 	fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32){
 		self.mouse_down = true;
 		self.remember.curr_pressed_square = self.coordinate_to_square(ctx, (x, y));
-		println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
 	}
 	fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32){
 		self.mouse_down = false;
@@ -527,11 +527,13 @@ impl ggez::event::EventHandler for MainState {
 				}
 			}
 		}
-		println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
 	}
 }
 
-fn main() -> GameResult{	
+fn main() -> GameResult{
+	//tests
+	tests::eval_speed_test();
+
 	//Add path of sprite folder
 	let sprite_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -548,8 +550,8 @@ fn main() -> GameResult{
 	.window_mode(conf::WindowMode::default().dimensions(800.0, 800.0))
 	.add_resource_path(sprite_dir);
 	
-    let (ctx, event_loop) = &mut cb.build()?;
-
+	let (ctx, event_loop) = &mut cb.build()?;
+	
     let state = &mut MainState::new(ctx)?;
     event::run(ctx, event_loop, state)
 }
