@@ -3,7 +3,8 @@ mod negamax;
 
 // Base function that generates the best move
 pub fn ai_move(board: &mut Board){
-    let m = best_immediate(board);
+   // let m = best_immediate(board);
+    let m = negamax::negamax_root(*board);
     let mut result = Board::default();
     board.make_move(m, &mut result);
     *board = result;
@@ -35,6 +36,7 @@ fn best_capture(board: &mut Board) -> Option<ChessMove>{
     let mut value: Option<f32> = None;
     let mut source: Square = Square::A1;
     let mut dest: Square = Square::A2;
+    let mut promotion = None;
     for take in &mut iterable {
         let new_value = Some(capture_value(board, take.get_dest()).abs());
         println!("{} to {}", take.get_source(), take.get_dest());
@@ -42,11 +44,12 @@ fn best_capture(board: &mut Board) -> Option<ChessMove>{
             value = new_value;
             source = take.get_source();
             dest = take.get_dest();
+            promotion = take.get_promotion();
         }
     };
 
     if value != None {
-        Some(ChessMove::new(source, dest, None))
+        Some(ChessMove::new(source, dest, promotion))
     } else {
         // If there are no captures return Option<None>
         None
@@ -87,6 +90,7 @@ fn best_quiet(board: &mut Board) -> ChessMove {
     let mut value: Option<f32> = None;
     let mut source: Square = Square::A1;
     let mut dest: Square = Square::A2;
+    let mut promotion = None;
     for quiet in &mut iterable {
         let new_value = Some(quiet_value(board, 
                                          quiet.get_source(), 
@@ -97,10 +101,11 @@ fn best_quiet(board: &mut Board) -> ChessMove {
             value = new_value;
             source = quiet.get_source();
             dest = quiet.get_dest();
+            promotion = quiet.get_promotion();
         }
     };
 
-    ChessMove::new(source, dest, None)
+    ChessMove::new(source, dest, promotion)
 }
 
 fn quiet_value(board: &mut Board, source: Square, dest: Square) -> f32 {

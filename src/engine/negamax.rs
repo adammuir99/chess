@@ -1,19 +1,10 @@
 use chess::{Board, MoveGen, Square, ChessMove, BoardStatus, EMPTY};
 
-/* int negaMax( int depth ) {
-    if ( depth == 0 ) return evaluate();
-    int max = -oo;
-    for ( all moves)  {
-        score = -negaMax( depth - 1 );
-        if( score > max )
-            max = score;
-    }
-    return max;
-} */
-pub fn negamax(board: &mut Board, depth: u32) -> i32{
-    if depth == 0 { return evaluate(*board) }
-
-    let mut max = -10000;
+//
+pub fn negamax_root(board: Board) -> ChessMove {
+    let depth = 4;
+    let mut best_moves = Vec::new();
+    let mut max = -1000000;
 
     //create an iterable
     let mut iterable = MoveGen::new_legal(&board);
@@ -22,25 +13,60 @@ pub fn negamax(board: &mut Board, depth: u32) -> i32{
     let targets = board.color_combined(board.side_to_move());
     iterable.set_iterator_mask(!*targets);
 
-    for _ in iterable {
-        let score = -negamax(board, depth - 1);
+    for chessmove in iterable {
+        let m = ChessMove::new(chessmove.get_source(), chessmove.get_dest(), chessmove.get_promotion());
+        let board_copy = board.make_move_new(m);
+        let score = -negamax(board_copy, depth - 1, true);
+
+        if score > max {
+            max = score;
+            best_moves.clear();
+            best_moves.push(chessmove)
+        }
+    };
+
+    let best = best_moves[0];
+    return best
+    
+}
+
+
+fn negamax(board: Board, depth: u32, color: bool) -> i32{
+
+    let color_modifier = if color {1} else {-1};
+
+    if depth == 0 { return evaluate(board) * color_modifier }
+
+    let mut max = -1000000;
+
+    //create an iterable
+    let mut iterable = MoveGen::new_legal(&board);
+
+    // iterate over every move
+    let targets = board.color_combined(board.side_to_move());
+    iterable.set_iterator_mask(!*targets);
+
+    for chessmove in iterable {
+        let m = ChessMove::new(chessmove.get_source(), chessmove.get_dest(), chessmove.get_promotion());
+        let board_copy = board.make_move_new(m);
+        let score = -negamax(board_copy, depth - 1, !color);
         if score > max {
             max = score;
         }
     };
-    max
+    return max
 }
 
 fn evaluate(board: Board) -> i32 {
-    let mut value2 = 0;
-    value2 += get_piece_balance(board, chess::Piece::Pawn);
-    value2 += get_piece_balance(board, chess::Piece::Bishop);
-    value2 += get_piece_balance(board, chess::Piece::Knight);
-    value2 += get_piece_balance(board, chess::Piece::Rook);
-    value2 += get_piece_balance(board, chess::Piece::Queen);
-    value2 += get_piece_balance(board, chess::Piece::King);
+    let mut value = 0;
+    value += get_piece_balance(board, chess::Piece::Pawn);
+    value += get_piece_balance(board, chess::Piece::Bishop);
+    value += get_piece_balance(board, chess::Piece::Knight);
+    value += get_piece_balance(board, chess::Piece::Rook);
+    value += get_piece_balance(board, chess::Piece::Queen);
+    value += get_piece_balance(board, chess::Piece::King);
 
-    value2
+    value
 }
 
 fn get_piece_balance(board: Board, piece: chess::Piece) -> i32 {
