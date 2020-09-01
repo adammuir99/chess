@@ -2,6 +2,7 @@ use ggez;
 use nalgebra;
 use std::env;
 use std::path;
+use std::time::Instant;
 
 use ggez::conf;
 use ggez::{Context, GameResult};
@@ -10,7 +11,7 @@ use ggez::graphics::{self, Color, MeshBuilder, DrawParam};
 
 use chess::{Board, Square, ChessMove, BoardStatus, EMPTY};
 
-//Import engine.rs
+//Import external modules
 mod engine;
 mod tests;
 
@@ -71,7 +72,7 @@ struct Remember{
 	curr_pressed_square: Square,
 	last_pressed_square: Square,
 	released_square: Square,
-	display_last_move: bool,
+	display_last_move: bool		// only false at the start of the game
 }
 
 impl Remember {
@@ -468,7 +469,11 @@ impl ggez::event::EventHandler for MainState {
 	fn update(&mut self, _ctx: &mut Context) -> GameResult {
 		//assert_eq!(self.board.status(), BoardStatus::Ongoing);
 		if self.board.side_to_move() == chess::Color::Black {
-			engine::ai_move(&mut self.board);
+			let timer = Instant::now();
+			let m = engine::ai_move(&mut self.board);
+			println!("Time to calculate move: {:.2?}", timer.elapsed());
+			self.remember.released_square = m.get_source();
+			self.remember.last_pressed_square = m.get_dest();
 		}
 		Ok(())
 	}
@@ -497,33 +502,33 @@ impl ggez::event::EventHandler for MainState {
 	}
 	fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32){
 		self.mouse_down = false;
+		let released;
 		//Check for release outside the window
 		let (tile_width, tile_height) = self.tile_size(ctx);
 		if x < 0.0 || x > (tile_width * 8.0) || y < 0.0 || y > (tile_height * 8.0){
-			self.remember.released_square = self.remember.curr_pressed_square;
+			released = self.remember.curr_pressed_square;
 		} else {	//User released inside the window
-			self.remember.released_square = self.coordinate_to_square(ctx, (x, y));
+			released = self.coordinate_to_square(ctx, (x, y));
 			
-			if self.remember.released_square != self.remember.curr_pressed_square{
+			if released != self.remember.curr_pressed_square{
 				//Determine whether the piece needs to be promoted
-				let promotion = if self.board.piece_on(self.remember.curr_pressed_square) == Some(chess::Piece::Pawn)
-								&& (self.remember.released_square.get_rank() == chess::Rank::First
-								|| self.remember.released_square.get_rank() == chess::Rank::Eighth) {
+				let promotion = if self.board.piece_on(released) == Some(chess::Piece::Pawn)
+								&& (released.get_rank() == chess::Rank::First
+								|| released.get_rank() == chess::Rank::Eighth) {
 					Some(chess::Piece::Queen)
 				} else {
 					None
 				};
 				let m = ChessMove::new(self.remember.curr_pressed_square,
-					self.remember.released_square,
+					released,
 					promotion);
 				//If the suggested move is legal, make the move and update the board
 				if self.board.legal(m) {
-					self.remember.display_last_move = true;
+					self.remember.curr_pressed_square = released;	//For highlighting
+					self.remember.display_last_move = true;			//Allow highlights
 					let mut result = Board::default();
 					self.board.make_move(m, &mut result);
 					self.board = result;
-					//Remember the move that was made
-					self.remember.last_pressed_square = self.remember.released_square;
 				}
 			}
 		}

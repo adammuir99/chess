@@ -2,13 +2,14 @@ use chess::{Board, MoveGen, Square, ChessMove, BoardStatus, EMPTY};
 mod negamax;
 
 // Base function that generates the best move
-pub fn ai_move(board: &mut Board){
+pub fn ai_move(board: &mut Board) -> ChessMove{
    // let m = best_immediate(board);
     let m = negamax::negamax_root(*board);
     let mut result = Board::default();
     board.make_move(m, &mut result);
     *board = result;
-    //let u = negamax::negamax(5);
+    
+    return m
 }
 
 // This function will return the best immediate move.
