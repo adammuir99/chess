@@ -1,4 +1,4 @@
-use chess::{Board, MoveGen, Square, ChessMove, BoardStatus, EMPTY};
+use chess::{Board, MoveGen, Square, ChessMove};
 mod negamax;
 
 // Base function that generates the best move

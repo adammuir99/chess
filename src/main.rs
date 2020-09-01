@@ -332,6 +332,24 @@ impl MainState {
 		Ok(())
 	}
 
+	fn draw_gamestate(&self, ctx: &mut Context, gamestate: String) {
+		let text = ggez::graphics::Text::new(ggez::graphics::TextFragment {
+            // `TextFragment` stores a string, and optional parameters which will override those
+            // of `Text` itself. This allows inlining differently formatted lines, words,
+            // or even individual letters, into the same block of text.
+            text: gamestate.to_string(),
+            color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
+            // `Font` is a handle to a loaded TTF, stored inside the `Context`.
+            // `Font::default()` always exists and maps to DejaVuSerif.
+            font: Some(graphics::Font::default()),
+            scale: Some(ggez::graphics::Scale::uniform(150.0)),
+            // This doesn't do anything at this point; can be used to omit fields in declarations.
+            ..Default::default()
+		});
+		
+		graphics::draw(ctx, &text, DrawParam::default().dest(nalgebra::Point2::new(25.0, 320.0)));
+	}
+
 	fn square_to_coordinate(&self, ctx: &mut Context, square: Square) -> (f32, f32){
 		let (tile_width, tile_height) = self.tile_size(ctx);
 		let (x, y) = match square {
@@ -485,7 +503,15 @@ impl ggez::event::EventHandler for MainState {
 			self.draw_highlights(ctx)?;
 		}
 		self.draw_pieces(ctx, &self.board)?;
-        graphics::present(ctx)?;
+
+		if self.board.status() == BoardStatus::Checkmate{
+			self.draw_gamestate(ctx, "Checkmate".to_string());
+		} else if self.board.status() == BoardStatus::Stalemate {
+			self.draw_gamestate(ctx, " Stalemate".to_string());
+		}
+		
+		graphics::present(ctx)?;
+		
 		Ok(())
 	}
 
@@ -496,17 +522,17 @@ impl ggez::event::EventHandler for MainState {
 			self.pos_y = y;
 		}
 	}
-	fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32){
+	fn mouse_button_down_event(&mut self, ctx: &mut Context, _button: MouseButton, x: f32, y: f32){
 		self.mouse_down = true;
 		self.remember.curr_pressed_square = self.coordinate_to_square(ctx, (x, y));
 	}
-	fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32){
+	fn mouse_button_up_event(&mut self, ctx: &mut Context, _button: MouseButton, x: f32, y: f32){
 		self.mouse_down = false;
 		let released;
 		//Check for release outside the window
 		let (tile_width, tile_height) = self.tile_size(ctx);
 		if x < 0.0 || x > (tile_width * 8.0) || y < 0.0 || y > (tile_height * 8.0){
-			released = self.remember.curr_pressed_square;
+			//Do nothing
 		} else {	//User released inside the window
 			released = self.coordinate_to_square(ctx, (x, y));
 			
