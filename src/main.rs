@@ -486,6 +486,9 @@ impl ggez::event::EventHandler for MainState {
 	//Called upon each logic update to the game. This should be where the game's logic takes place.
 	fn update(&mut self, _ctx: &mut Context) -> GameResult {
 		//assert_eq!(self.board.status(), BoardStatus::Ongoing);
+		if self.board.status() != BoardStatus::Ongoing {
+			return Ok(())
+		}
 		if self.board.side_to_move() == chess::Color::Black {
 			let timer = Instant::now();
 			let m = engine::ai_move(&mut self.board);
@@ -538,7 +541,7 @@ impl ggez::event::EventHandler for MainState {
 			
 			if released != self.remember.curr_pressed_square{
 				//Determine whether the piece needs to be promoted
-				let promotion = if self.board.piece_on(released) == Some(chess::Piece::Pawn)
+				let promotion = if self.board.piece_on(self.remember.curr_pressed_square) == Some(chess::Piece::Pawn)
 								&& (released.get_rank() == chess::Rank::First
 								|| released.get_rank() == chess::Rank::Eighth) {
 					Some(chess::Piece::Queen)
@@ -562,8 +565,8 @@ impl ggez::event::EventHandler for MainState {
 }
 
 fn main() -> GameResult{
-	//tests
-	tests::eval_speed_test();
+	// Tests
+	//tests::eval_speed_test();
 
 	//Add path of sprite folder
 	let sprite_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {

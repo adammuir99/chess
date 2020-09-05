@@ -1,10 +1,12 @@
 use chess::{Board, MoveGen, Square, ChessMove};
 mod negamax;
+mod alphabeta;
 
 // Base function that generates the best move
 pub fn ai_move(board: &mut Board) -> ChessMove{
    // let m = best_immediate(board);
-    let m = negamax::negamax_root(*board);
+    //let m = negamax::negamax_root(*board);
+    let m = alphabeta::alphabeta_root(*board, -std::i32::MAX, std::i32::MAX);
     let mut result = Board::default();
     board.make_move(m, &mut result);
     *board = result;

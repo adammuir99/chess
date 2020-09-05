@@ -1,10 +1,11 @@
 use chess::{Board, MoveGen, ChessMove};
+use rand::Rng;
 
 //
 pub fn negamax_root(board: Board) -> ChessMove {
     let depth = 4;
     let mut best_moves = Vec::new();
-    let mut max = -1000000;
+    let mut max = -std::i32::MAX;
 
     //create an iterable
     let mut iterable = MoveGen::new_legal(&board);
@@ -21,11 +22,14 @@ pub fn negamax_root(board: Board) -> ChessMove {
         if score > max {
             max = score;
             best_moves.clear();
-            best_moves.push(chessmove)
+            best_moves.push(chessmove);
+        } else if score == max {
+            best_moves.push(chessmove);
         }
     };
 
-    let best = best_moves[0];
+    // If there are multiple moves with the same value, take a random one
+    let best = best_moves[rand::thread_rng().gen_range(0, best_moves.len())];
     return best
     
 }
@@ -37,7 +41,7 @@ fn negamax(board: Board, depth: u32, color: bool) -> i32{
 
     if depth == 0 { return evaluate(board) * color_modifier }
 
-    let mut max = -1000000;
+    let mut max = -std::i32::MAX;
 
     //create an iterable
     let mut iterable = MoveGen::new_legal(&board);
