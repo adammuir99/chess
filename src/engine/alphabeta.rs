@@ -1,8 +1,9 @@
 use chess::{Board, MoveGen, ChessMove};
 use rand::Rng;
+use std::cmp;
 
 pub fn alphabeta_root(board: Board, mut alpha: i32, beta: i32) -> ChessMove {
-   let depth = 3;
+   let depth = 5;
    let mut best_moves = Vec::new();
 
    //create an iterable
@@ -15,18 +16,15 @@ pub fn alphabeta_root(board: Board, mut alpha: i32, beta: i32) -> ChessMove {
    for chessmove in iterable {
       let board_copy = board.make_move_new(chessmove);
       let value = -alphabeta(board_copy, depth - 1, -beta, -alpha, true);
-
       if value > alpha { 
          alpha = value;
          best_moves.clear();
          best_moves.push(chessmove);
-      } else if value == alpha {
-         best_moves.push(chessmove);
       }
    };
 
-   // If there are multiple moves with the same value, take a random one
-   let best = best_moves[rand::thread_rng().gen_range(0, best_moves.len())];
+   // Get the best move
+   let best = best_moves[0];
    return best
    
 }
@@ -43,9 +41,14 @@ pub fn alphabeta_root(board: Board, mut alpha: i32, beta: i32) -> ChessMove {
     return alpha;
  } */
 fn alphabeta(board: Board, depth: u32, mut alpha: i32, beta: i32, color: bool) -> i32{
+   //If the board status is checkmate, the current player has lost -> return large negative number
+   if board.status() == chess::BoardStatus::Checkmate { return -100000 }
+
    let color_modifier = if color {1} else {-1};
 
     if depth == 0 { return evaluate(board) * color_modifier }
+
+    let mut value = -std::i32::MAX;
 
     //create an iterable
     let mut iterable = MoveGen::new_legal(&board);
@@ -56,14 +59,15 @@ fn alphabeta(board: Board, depth: u32, mut alpha: i32, beta: i32, color: bool) -
 
     for chessmove in iterable {
         let board_copy = board.make_move_new(chessmove);
-        let value = -alphabeta(board_copy, depth - 1, -beta, -alpha, !color);
-        if value > alpha { alpha = value; }
-        if value >= beta { return value }
+        value = cmp::max(-alphabeta(board_copy, depth - 1, -beta, -alpha, !color), value);
+        alpha = cmp::max(alpha, value);
+        if alpha >= beta {break}
     };
-    return alpha
+    return value
 }
 
 fn evaluate(board: Board) -> i32 {
+
    let mut value = 0;
    value += get_piece_balance(board, chess::Piece::Pawn);
    value += get_piece_balance(board, chess::Piece::Bishop);

@@ -38,7 +38,7 @@ pub fn negamax_root(board: Board) -> ChessMove {
 fn negamax(board: Board, depth: u32, color: bool) -> i32{
 
     let color_modifier = if color {1} else {-1};
-
+    //The heuristic evaluation function must return values from the point of view of the node's current player
     if depth == 0 { return evaluate(board) * color_modifier }
 
     let mut max = -std::i32::MAX;
