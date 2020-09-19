@@ -1,6 +1,6 @@
 use chess::{Board, MoveGen, ChessMove};
-use rand::Rng;
 use std::cmp;
+mod pst;
 
 pub fn alphabeta_root(board: Board, mut alpha: i32, beta: i32) -> ChessMove {
    let depth = 5;
@@ -83,6 +83,7 @@ fn get_piece_balance(board: Board, piece: chess::Piece) -> i32 {
    let mut color = board.color_combined(chess::Color::White);
    let pieces = board.pieces(piece);
    let mut value = 0;
+   let mut position_value = 0;
 
    let cost = match piece {
        chess::Piece::Pawn => 100,
@@ -93,22 +94,62 @@ fn get_piece_balance(board: Board, piece: chess::Piece) -> i32 {
        chess::Piece::King => 20000,
    };
 
-   //Get the binary representation of all {color} {pieces}
-   let n = *pieces & *color;
+   let mut pst_cost = match piece {
+      chess::Piece::Pawn => pst::PST_WHITE_PAWN,
+      chess::Piece::Bishop => pst::PST_WHITE_BISHOP,
+      chess::Piece::Knight => pst::PST_WHITE_KNIGHT,
+      chess::Piece::Rook => pst::PST_WHITE_ROOK,
+      chess::Piece::Queen => pst::PST_WHITE_QUEEN,
+      chess::Piece::King => pst::PST_WHITE_KING,
+  };
 
-   let mut num = n.to_size(0).count_ones() as i32; // Get the number of 1's in the binary number (and cast from u32 to i32)
+   //Get the binary representation of all {color} {pieces}
+   let n = (*pieces & *color).to_size(0);
+
+   let mut num = n.count_ones() as i32; // Get the number of 1's in the binary number (and cast from u32 to i32)
 
    value += num * cost;
 
+   let mut n2 = n;
+
+   while n2 != 0 {
+      let square = n2.trailing_zeros();   //The number of trailing 0s will give the index of the first 1 (LSB = A1)
+      n2 &= n2 - 1;  // ANDing with (itself - 1) will remove the least significant 1
+      position_value = position_value + pst_cost[square as usize];
+   }
+
+   value = value + position_value;
+
    // Check black pieces
+   position_value = 0;
+
+   let mut pst_cost = match piece {
+      chess::Piece::Pawn => pst::PST_BLACK_PAWN,
+      chess::Piece::Bishop => pst::PST_BLACK_BISHOP,
+      chess::Piece::Knight => pst::PST_BLACK_KNIGHT,
+      chess::Piece::Rook => pst::PST_BLACK_ROOK,
+      chess::Piece::Queen => pst::PST_BLACK_QUEEN,
+      chess::Piece::King => pst::PST_BLACK_KING,
+  };
+
    color = board.color_combined(chess::Color::Black);
 
    //Get the binary representation of all {color} {pieces}
-   let n = *pieces & *color;
+   let n = (*pieces & *color).to_size(0);
 
-   num = n.to_size(0).count_ones() as i32; // Get the number of 1's in the binary number (and cast from u32 to i32)
+   num = n.count_ones() as i32; // Get the number of 1's in the binary number (and cast from u32 to i32)
 
    value -= num * cost;
+
+   let mut n2 = n;
+
+   while n2 != 0 {
+      let square = n2.trailing_zeros();   //The number of trailing 0s will give the index of the first 1 (LSB = A1)
+      n2 &= n2 - 1;  // ANDing with (itself - 1) will remove the least significant 1
+      position_value = position_value + pst_cost[square as usize];
+   }
+
+   value = value - position_value;
 
    return value
 }
