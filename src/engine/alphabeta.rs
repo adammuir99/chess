@@ -43,6 +43,7 @@ pub fn alphabeta_root(board: Board, mut alpha: i32, beta: i32) -> ChessMove {
 fn alphabeta(board: Board, depth: u32, mut alpha: i32, beta: i32, color: bool) -> i32{
    //If the board status is checkmate, the current player has lost -> return large negative number
    if board.status() == chess::BoardStatus::Checkmate { return -100000 }
+   else if board.status() == chess::BoardStatus::Stalemate { return 0 }
 
    let color_modifier = if color {1} else {-1};
 
@@ -110,11 +111,12 @@ fn get_piece_balance(board: Board, piece: chess::Piece) -> i32 {
 
    value += num * cost;
 
+   //Now use Piece Square Tables to check the value of the location of each piece
    let mut n2 = n;
 
    while n2 != 0 {
       let square = n2.trailing_zeros();   //The number of trailing 0s will give the index of the first 1 (LSB = A1)
-      n2 &= n2 - 1;  // ANDing with (itself - 1) will remove the least significant 1
+      n2 &= n2 - 1;                       //ANDing with (itself - 1) will remove the least significant 1
       position_value = position_value + pst_cost[square as usize];
    }
 
